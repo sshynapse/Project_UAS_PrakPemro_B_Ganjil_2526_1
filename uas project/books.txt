@@ -1,0 +1,4 @@
+123|Pengantar Kalkulus|Al-Khawarizmi|Non-Fiksi|1|1
+234|Janji|Tere Liye|Fiksi|1|0
+345|Resep Makanan|Chef Juna|Majalah|1|0
+456|KTI Penelitian AI|Mhsw USK|Referensi|1|0
