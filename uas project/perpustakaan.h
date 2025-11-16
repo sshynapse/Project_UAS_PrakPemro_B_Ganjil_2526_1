@@ -6,59 +6,76 @@
 #include <string.h>
 #include <time.h>
 
-// Definisi struct
-typedef struct {
+#define MAX_STR 100
+#define MAX_BOOKS 1000
+#define MAX_MEMBERS 500
+#define MAX_LOANS 1000
+
+/* Struktur Buku */
+typedef struct{
     int id;
-    char judul[100];
-    char penulis[100];
-    char kategori[50];  // Fiksi, Non-Fiksi, Komik, Majalah, Referensi
-    char status[20];    // Tersedia, Dipinjam
+    char judul[MAX_STR];
+    char penulis[MAX_STR];
+    char kategori[MAX_STR];
+    int tersedia;       // 1 = tersedia, 0 = dipinjam
+    int dipinjamCount;  // berapa kali dipinjam
 } Buku;
 
-typedef struct {
+/* Struktur Anggota */
+typedef struct{
     int id;
-    char nama[100];
-    char email[100];
+    char nama[MAX_STR];
+    char alamat[MAX_STR];
 } Anggota;
 
+/* Struktur Peminjaman */
 typedef struct {
-    int id_buku;
-    int id_member;
-    char tanggal_pinjam[11];  // Format YYYY-MM-DD
-    char tanggal_kembali[11]; // Format YYYY-MM-DD atau "None"
-    float denda;
+    int id;
+    int idBuku;
+    int idAnggota;
+    char tanggalPinjam[20];   // "DD-MM-YYYY"
+    char tanggalKembali[20];  // "-" kalo belum kembali
+    int denda;
 } Peminjaman;
 
-// Konstanta
-#define MAX_LOAN_DAYS 7
-#define FINE_PER_DAY 1000.0
+void tampilkanMenuUtama();
+void loginPustakawan();
 
-// Prototipe fungsi dari utils.c
-void load_books(Buku **books, int *count);
-void save_books(Buku *books, int count);
-void load_members(Anggota **members, int *count);
-void save_members(Anggota *members, int count);
-void load_loans(Peminjaman **loans, int *count);
-void save_loans(Peminjaman *loans, int count);
-int login();
+/* buku */
+void tambahBuku();
+void hapusBuku();
+void editBuku();
+void tampilkanDaftarBuku();
+void cariBuku();
+void rankingBuku();
 
-// Prototipe fungsi dari buku.c
-void add_book(Buku **books, int *count);
-void delete_book(Buku **books, int *count);
-void edit_book(Buku *books, int count);
-void view_books(Buku *books, int count);
-void categorize_books(Buku *books, int count, const char *kategori);
-void search_books(Buku *books, int count, const char *query, const char *by);
+void simpanBuku_tambah(Buku buku);
+void bacaBukuDariFile(Buku daftarBuku[], int *jumlah);
+void tulisSemuaBukuKeFile(Buku daftarBuku[], int jumlah);
 
-// Prototipe fungsi dari anggota.c
-void register_member(Anggota **members, int *count);
-void view_members(Anggota *members, int count);
+/* anggota */
+void tambahAnggota();
+void tampilkanAnggota();
+void simpanAnggota_tambah(Anggota anggota);
+void bacaAnggotaDariFile(Anggota daftarAnggota[], int *jumlah);
 
-// Prototipe fungsi dari peminjaman.c
-void borrow_book(Buku *books, int book_count, Peminjaman **loans, int *loan_count, Anggota *members, int member_count);
-void return_book(Buku *books, int book_count, Peminjaman *loans, int loan_count);
-void view_loan_history(Peminjaman *loans, int loan_count, int id_member);
-void book_ranking(Peminjaman *loans, int loan_count);
-void statistics(int book_count, int member_count, int loan_count);  // Fitur tambahan
+/* peminjaman */
+void pinjamBuku();
+void kembalikanBuku();
+int hitungDenda(const char *tglPinjam, const char *tglKembali);
+void simpanPeminjaman_tambah(Peminjaman peminjam);
+void bacaPeminjamDariFile(Peminjaman daftarPeminjam[], int *jumlah);
+void tulisSemuaPeminjamanKeFile(Peminjaman daftarPeminjam[], int jumlah);
+void tampilkanRiwayatAnggota();
+
+/* utils */
+void getTanggalSekarang(char *buffer);
+void clearBuffer();
+int strncasecmp(const char *s1, const char *s2, size_t n);
+char *strcasestr(const char *haystack, const char *needle);
+
+/* konfigurasi */
+int getMaxLoanDays();
+void ubahDurasiPeminjaman();
 
 #endif
