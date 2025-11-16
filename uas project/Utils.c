@@ -1,103 +1,67 @@
 #include "perpustakaan.h"
+#include <ctype.h> 
 
-void load_books(Buku **books, int *count) {
-    FILE *file = fopen("data/books.txt", "r");
-    if (!file) {
-        printf("File books.txt tidak ditemukan. Membuat baru.\n");
-        return;
-    }
-    char line[256];
-    *count = 0;
-    while (fgets(line, sizeof(line), file)) {
-        *books = realloc(*books, (*count + 1) * sizeof(Buku));
-        sscanf(line, "%d,%99[^,],%99[^,],%49[^,],%19[^\n]",
-               &(*books)[*count].id, (*books)[*count].judul,
-               (*books)[*count].penulis, (*books)[*count].kategori, (*books)[*count].status);
-        (*count)++;
-    }
-    fclose(file);
+/* Ambil tanggal sekarang (DD-MM-YYYY) */
+void getTanggalSekarang(char *buffer) {
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    sprintf(buffer, "%02d-%02d-%04d", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900);
 }
 
-void save_books(Buku *books, int count) {
-    FILE *file = fopen("data/books.txt", "w");
-    for (int i = 0; i < count; i++) {
-        fprintf(file, "%d,%s,%s,%s,%s\n", books[i].id, books[i].judul, books[i].penulis, books[i].kategori, books[i].status);
-    }
-    fclose(file);
+void clearBuffer() {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
 }
 
-void load_members(Anggota **members, int *count) {
-    FILE *file = fopen("data/members.txt", "r");
-    if (!file) {
-        printf("File members.txt tidak ditemukan. Membuat baru.\n");
-        return;
-    }
-    char line[256];
-    *count = 0;
-    while (fgets(line, sizeof(line), file)) {
-        *members = realloc(*members, (*count + 1) * sizeof(Anggota));
-        sscanf(line, "%d,%99[^,],%99[^\n]",
-               &(*members)[*count].id, (*members)[*count].nama, (*members)[*count].email);
-        (*count)++;
-    }
-    fclose(file);
+/* Baca durasi maksimal pinjam dari data/config.txt, default 7 hari */
+int getMaxLoanDays() {
+    FILE *f = fopen("data/config.txt", "r");
+    if (!f) return 7;
+    int days = 7;
+    if (fscanf(f, "%d", &days) != 1) days = 7;
+    fclose(f);
+    return days;
 }
 
-void save_members(Anggota *members, int count) {
-    FILE *file = fopen("data/members.txt", "w");
-    for (int i = 0; i < count; i++) {
-        fprintf(file, "%d,%s,%s\n", members[i].id, members[i].nama, members[i].email);
-    }
-    fclose(file);
+/* Ubah durasi peminjaman (tulis ke config) */
+void ubahDurasiPeminjaman() {
+    int days;
+    printf("Masukkan durasi peminjaman maksimal (hari): ");
+    if (scanf("%d", &days) != 1) { clearBuffer(); printf("Input tidak valid.\n"); return; }
+    FILE *f = fopen("data/config.txt", "w");
+    if (!f) { printf("Gagal menulis config.\n"); return; }
+    fprintf(f, "%d\n", days);
+    fclose(f);
+    printf("Durasi peminjaman diatur menjadi %d hari.\n", days);
 }
 
-void load_loans(Peminjaman **loans, int *count) {
-    FILE *file = fopen("data/loans.txt", "r");
-    if (!file) {
-        printf("File loans.txt tidak ditemukan. Membuat baru.\n");
-        return;
+int strncasecmp_portable(const char *s1, const char *s2, size_t n) {
+    if (n == 0) return 0;
+    size_t i;
+    for (i = 0; i < n; ++i) {
+        unsigned char c1 = (unsigned char)s1[i];
+        unsigned char c2 = (unsigned char)s2[i];
+        int lc1 = tolower(c1);
+        int lc2 = tolower(c2);
+        if (lc1 != lc2) return lc1 - lc2;
+        if (c1 == '\0') return 0;
     }
-    char line[256];
-    *count = 0;
-    while (fgets(line, sizeof(line), file)) {
-        *loans = realloc(*loans, (*count + 1) * sizeof(Peminjaman));
-        sscanf(line, "%d,%d,%10[^,],%10[^,],%f",
-               &(*loans)[*count].id_buku, &(*loans)[*count].id_member,
-               (*loans)[*count].tanggal_pinjam, (*loans)[*count].tanggal_kembali, &(*loans)[*count].denda);
-        (*count)++;
-    }
-    fclose(file);
-}
-
-void save_loans(Peminjaman *loans, int count) {
-    FILE *file = fopen("data/loans.txt", "w");
-    for (int i = 0; i < count; i++) {
-        fprintf(file, "%d,%d,%s,%s,%.0f\n", loans[i].id_buku, loans[i].id_member,
-                loans[i].tanggal_pinjam, loans[i].tanggal_kembali, loans[i].denda);
-    }
-    fclose(file);
-}
-
-int login() {
-    char username[50], password[50];
-    printf("Username: ");
-    scanf("%s", username);
-    printf("Password: ");
-    scanf("%s", password);
-    FILE *file = fopen("data/librarians.txt", "r");
-    if (!file) {
-        printf("File librarians.txt tidak ditemukan.\n");
-        return 0;
-    }
-    char line[256];
-    while (fgets(line, sizeof(line), file)) {
-        char u[50], p[50];
-        sscanf(line, "%49[^,],%49[^\n]", u, p);
-        if (strcmp(username, u) == 0 && strcmp(password, p) == 0) {
-            fclose(file);
-            return 1;
-        }
-    }
-    fclose(file);
     return 0;
+}
+
+#ifndef HAVE_STRNCASECMP
+int strncasecmp(const char *s1, const char *s2, size_t n) {
+    return strncasecmp_portable(s1, s2, n);
+}
+#endif
+
+char *strcasestr(const char *haystack, const char *needle) {
+    if (!haystack || !needle) return NULL;
+    size_t len_h = strlen(haystack);
+    size_t len_n = strlen(needle);
+    if (len_n == 0) return (char *)haystack;
+    for (size_t i = 0; i + len_n <= len_h; ++i) {
+        if (strncasecmp(haystack + i, needle, len_n) == 0) return (char *)(haystack + i);
+    }
+    return NULL;
 }
