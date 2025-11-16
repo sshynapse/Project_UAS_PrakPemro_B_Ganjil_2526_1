@@ -1,109 +1,27 @@
 #include "perpustakaan.h"
 
-void borrow_book(Buku *books, int book_count, Peminjaman **loans, int *loan_count, Anggota *members, int member_count) {
-    int id_buku, id_member;
-    printf("ID Buku: ");
-    scanf("%d", &id_buku);
-    printf("ID Anggota: ");
-    scanf("%d", &id_member);
-    // Cek apakah anggota ada
-    int member_exists = 0;
-    for (int i = 0; i < member_count; i++) {
-        if (members[i].id == id_member) {
-            member_exists = 1;
-            break;
-        }
-    }
-    if (!member_exists) {
-        printf("Anggota tidak ditemukan.\n");
+void load_books(Buku **books, int *count) {
+    FILE *file = fopen("data/books.txt", "r");
+    if (!file) {
+        printf("File books.txt tidak ditemukan. Membuat baru.\n");
         return;
     }
-    // Cek buku tersedia
-    for (int i = 0; i < book_count; i++) {
-        if (books[i].id == id_buku && strcmp(books[i].status, "Tersedia") == 0) {
-            strcpy(books[i].status, "Dipinjam");
-            *loans = realloc(*loans, (*loan_count + 1) * sizeof(Peminjaman));
-            Peminjaman *new_loan = &(*loans)[*loan_count];
-            new_loan->id_buku = id_buku;
-            new_loan->id_member = id_member;
-            time_t t = time(NULL);
-            struct tm *tm = localtime(&t);
-            strftime(new_loan->tanggal_pinjam, sizeof(new_loan->tanggal_pinjam), "%Y-%m-%d", tm);
-            strcpy(new_loan->tanggal_kembali, "None");
-            new_loan->denda = 0;
-            (*loan_count)++;
-            save_books(books, book_count);
-            save_loans(*loans, *loan_count);
-            printf("Buku dipinjam.\n");
-            return;
-        }
+    char line[256];
+    *count = 0;
+    while (fgets(line, sizeof(line), file)) {
+        *books = realloc(*books, (*count + 1) * sizeof(Buku));
+        sscanf(line, "%d,%99[^,],%99[^,],%49[^,],%19[^\n]",
+               &(*books)[*count].id, (*books)[*count].judul,
+               (*books)[*count].penulis, (*books)[*count].kategori, (*books)[*count].status);
+        (*count)++;
     }
-    printf("Buku tidak tersedia.\n");
+    fclose(file);
 }
 
-void return_book(Buku *books, int book_count, Peminjaman *loans, int loan_count) {
-    int id_buku;
-    printf("ID Buku: ");
-    scanf("%d", &id_buku);
-    time_t t = time(NULL);
-    struct tm *tm = localtime(&t);
-    char today[11];
-    strftime(today, sizeof(today), "%d-%d--%d", tm);
-    for (int i = 0; i < loan_count; i++) {
-        if (loans[i].id_buku == id_buku && strcmp(loans[i].tanggal_kembali, "None") == 0) {
-            strcpy(loans[i].tanggal_kembali, today);
-            // Hitung denda (sederhana: asumsikan hari penuh)
-            struct tm pinjam_tm = {0};
-            sscanf(loans[i].tanggal_pinjam, "%d-%d-%d", &pinjam_tm. tm_year, &pinjam_tm. tm_mon, &pinjam_tm. tm_mday);
-            time_t pinjam_time = mktime(&pinjam_tm);
-            int days_diff = (t - pinjam_time) / (60 * 60 * 24);
-            int days_late = days_diff - MAX_LOAN_DAYS;
-            loans[i].denda = (days_late > 0) ? days_late * FINE_PER_DAY : 0;
-            // Update status buku
-            for (int j = 0; j < book_count; j++) {
-                if (books[j].id == id_buku) {
-                    strcpy(books[j].status, "Tersedia");
-                }
-            }
-            save_books(books, book_count);
-            save_loans(loans, loan_count);
-            printf("Buku dikembalikan. Denda: Rp %.0f\n", loans[i].denda);
-            return;
-        }
+void save_books(Buku *books, int count) {
+    FILE *file = fopen("data/books.txt", "w");
+    for (int i = 0; i < count; i++) {
+        fprintf(file, "%d,%s,%s,%s,%s\n", books[i].id, books[i].judul, books[i].penulis, books[i].kategori, books[i].status);
     }
-    printf("Peminjaman tidak ditemukan.\n");
-}
-
-void view_loan_history(Peminjaman *loans, int loan_count, int id_member) {
-    printf("Riwayat peminjaman untuk ID Anggota %d:\n", id_member);
-    for (int i = 0; i < loan_count; i++) {
-        if (loans[i].id_member == id_member) {
-            printf("Buku ID: %d, Pinjam: %s, Kembali: %s, Denda: Rp %.0f\n",
-                   loans[i].id_buku, loans[i].tanggal_pinjam, loans[i].tanggal_kembali, loans[i].denda);
-        }
-    }
-}
-
-void book_ranking(Peminjaman *loans, int loan_count) {
-    int counts[1000] = {0};  // Asumsi ID buku max 1000; sesuaikan jika perlu
-    for (int i = 0; i < loan_count; i++) {
-        counts[loans[i].id_buku]++;
-    }
-    printf("Ranking buku (berdasarkan frekuensi peminjaman):\n");
-    for (int i = 1; i < 1000; i++) {
-        if (counts[i] > 0) {
-            printf("Buku ID %d: Dipinjam %d kali\n", i, counts[i]);
-        }
-    }
-}
-
-void statistics(int book_count, int member_count, int loan_count) {
-    printf("=== Statistik Perpustakaan ===\n");
-    printf("Total Buku: %d\n", book_count);
-    printf("Total Anggota: %d\n", member_count);
-    printf("Total Peminjaman: %d\n", loan_count);
-    // Tambahan kreativitas: Hitung rata-rata peminjaman per anggota
-    if (member_count > 0) {
-        printf("Rata-rata peminjaman per anggota: %.2f\n", (float)loan_count / member_count);
-    }
+    fclose(file);
 }
