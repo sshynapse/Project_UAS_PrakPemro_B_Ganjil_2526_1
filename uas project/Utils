@@ -72,3 +72,37 @@ void return_book(Buku *books, int book_count, Peminjaman *loans, int loan_count)
     }
     printf("Peminjaman tidak ditemukan.\n");
 }
+
+void view_loan_history(Peminjaman *loans, int loan_count, int id_member) {
+    printf("Riwayat peminjaman untuk ID Anggota %d:\n", id_member);
+    for (int i = 0; i < loan_count; i++) {
+        if (loans[i].id_member == id_member) {
+            printf("Buku ID: %d, Pinjam: %s, Kembali: %s, Denda: Rp %.0f\n",
+                   loans[i].id_buku, loans[i].tanggal_pinjam, loans[i].tanggal_kembali, loans[i].denda);
+        }
+    }
+}
+
+void book_ranking(Peminjaman *loans, int loan_count) {
+    int counts[1000] = {0};  // Asumsi ID buku max 1000; sesuaikan jika perlu
+    for (int i = 0; i < loan_count; i++) {
+        counts[loans[i].id_buku]++;
+    }
+    printf("Ranking buku (berdasarkan frekuensi peminjaman):\n");
+    for (int i = 1; i < 1000; i++) {
+        if (counts[i] > 0) {
+            printf("Buku ID %d: Dipinjam %d kali\n", i, counts[i]);
+        }
+    }
+}
+
+void statistics(int book_count, int member_count, int loan_count) {
+    printf("=== Statistik Perpustakaan ===\n");
+    printf("Total Buku: %d\n", book_count);
+    printf("Total Anggota: %d\n", member_count);
+    printf("Total Peminjaman: %d\n", loan_count);
+    // Tambahan kreativitas: Hitung rata-rata peminjaman per anggota
+    if (member_count > 0) {
+        printf("Rata-rata peminjaman per anggota: %.2f\n", (float)loan_count / member_count);
+    }
+}
