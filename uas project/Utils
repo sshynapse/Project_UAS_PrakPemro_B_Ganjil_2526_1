@@ -40,6 +40,7 @@ void borrow_book(Buku *books, int book_count, Peminjaman **loans, int *loan_coun
     }
     printf("Buku tidak tersedia.\n");
 }
+
 void return_book(Buku *books, int book_count, Peminjaman *loans, int loan_count) {
     int id_buku;
     printf("ID Buku: ");
